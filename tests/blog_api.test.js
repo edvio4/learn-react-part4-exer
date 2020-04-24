@@ -30,9 +30,9 @@ describe('get all blogs', () => {
     test('a specific blog is within the returned blogs with id', async () => {
         const response = await api.get('/api/blogs');
 
-        const contents = response.body.map(r => r.content);
+        const titles = response.body.map(r => r.title);
 
-        expect(contents).toContain(helper.initialBlogs[1].content);
+        expect(titles).toContain(helper.initialBlogs[1].title);
         expect(response.body[0].id).toBeDefined();
     });
 });
@@ -108,6 +108,46 @@ describe('create a blog', () => {
             .post('/api/blogs')
             .send(newBlog)
             .expect(400);
+    });
+});
+
+describe('delete a blog', () => {
+    test('a blog can be deleted', async () => {
+        const blogsAtStart = await helper.blogsInDb();
+        const blogToDelete = blogsAtStart[0];
+
+        await api
+            .delete(`/api/blogs/${blogToDelete.id}`)
+            .expect(204);
+
+        const blogsAtEnd = await helper.blogsInDb();
+
+        expect(blogsAtEnd).toHaveLength(
+            helper.initialBlogs.length - 1
+        );
+
+        const titles = blogsAtEnd.map(r => r.title);
+
+        expect(titles).not.toContain(blogToDelete.title);
+    });
+});
+
+describe('update a blog', () => {
+    test('a blog\'s likes can be updated', async () => {
+        const blogsAtStart = await helper.blogsInDb();
+        let blogToUpdate = blogsAtStart[0];
+        blogToUpdate.likes += 10;
+        const updatedLikes = blogToUpdate.likes;
+
+        await api
+            .put(`/api/blogs/${blogToUpdate.id}`)
+            .send(blogToUpdate)
+            .expect(200);
+
+        const blogs = await helper.blogsInDb();
+        const updatedBlog = blogs.find(blog => blog.id === blogToUpdate.id);
+
+        expect(updatedBlog.likes).toBe(updatedLikes);
     });
 });
 
